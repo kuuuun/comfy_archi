@@ -2,26 +2,53 @@ import toml
 from pathlib import Path
 
 
-class SellectPosPrompt:
+class ArchFunc:
+    """
+    基础功能
+    """
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def _load_toml(file_name):
+        """
+        读取 toml 文件
+        """
+        try:
+            with file_name.open("r", encoding="utf-8") as file:
+                return toml.load(file)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found: {file_name}")
+        except toml.TomlDecodeError:
+            raise ValueError(f"Invalid TOML format in file: {file_name}")
+
+    @staticmethod
+    def _validate_input(value, data, key) -> None:
+        """
+        检验输入
+        """
+        if value not in data[key]:
+            raise ValueError(f"Invalid value for {key}: '{value}'. Available options: {list(data[key].keys())}")
+
+    @staticmethod
+    def _clip_condition(clip, text):
+        """
+        Clip 转 conditioning
+        """
+        tokens = clip.tokenize(text)
+        cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+        return ([[cond, {"pooled_output": pooled}]],)
+
+
+class SelectPosPrompt(ArchFunc):
+    POSITIVE_PROMPT_FILE = Path(__file__).resolve().parent / "positive_prompt.toml"
+
     def __init__(self):
         pass
 
     @classmethod
     def INPUT_TYPES(cls):
-        """
-        Return a dictionary which contains config for all input fields.
-        Some types (string): "MODEL", "VAE", "CLIP", "CONDITIONING", "LATENT", "IMAGE", "INT", "STRING", "FLOAT".
-        Input types "INT", "STRING" or "FLOAT" are special values for fields on the node.
-        The type can be a list for selection.
-
-        Returns: `dict`:
-            - Key input_fields_group (`string`): Can be either required, hidden or optional. A node class must have property `required`
-            - Value input_fields (`dict`): Contains input fields config:
-                * Key field_name (`string`): Name of a entry-point method's argument
-                * Value field_config (`tuple`):
-                    + First value is a string indicate the type of field or a list for selection.
-                    + Secound value is a config for type "INT", "STRING" or "FLOAT".
-        """
         file_name = Path(__file__).resolve().parent / "positive_prompt.toml"
         with file_name.open("r", encoding="utf-8") as file:
             data = toml.load(file)
@@ -54,51 +81,29 @@ class SellectPosPrompt:
 
     # OUTPUT_NODE = False
 
-    CATEGORY = "Archi24/TestNodes"
+    CATEGORY = "Archi24/Clip"
 
     def combine_prompt(self, clip, positive_prompt, building_general, building_styles, building_types, building_materials):
-        file_name = Path(__file__).resolve().parent / "positive_prompt.toml"
-        with file_name.open("r", encoding="utf-8") as file:
-            data = toml.load(file)
-        # 验证用户输入的值是否存在于 data 中
-        if building_general not in data["general"]:
-            raise ValueError(f"Invalid value for building_general: '{building_general}'. Available options: {list(data['general'].keys())}")
-        if building_styles not in data["styles"]:
-            raise ValueError(f"Invalid value for building_styles: '{building_styles}'. Available options: {list(data['styles'].keys())}")
-        if building_types not in data["types"]:
-            raise ValueError(f"Invalid value for building_types: '{building_types}'. Available options: {list(data['types'].keys())}")
-        if building_materials not in data["materials"]:
-            raise ValueError(
-                f"Invalid value for building_materials: '{building_materials}'. Available options: {list(data['materials'].keys())}"
-            )
+        data = self._load_toml(self.POSITIVE_PROMPT_FILE)
 
-        result = f"{positive_prompt}\n{data['general'][building_general]}\n{data['styles'][building_styles]}\n{data['types'][building_types]}\n{data['materials'][building_materials]}"
-        # return (result,)
-        tokens = clip.tokenize(result)
-        cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-        return ([[cond, {"pooled_output": pooled}]],)
+        self._validate_input(building_general, data, "general")
+        self._validate_input(building_styles, data, "styles")
+        self._validate_input(building_types, data, "types")
+        self._validate_input(building_materials, data, "materials")
+
+        text = f"{positive_prompt}\n{data['general'][building_general]}\n{data['styles'][building_styles]}\n{data['types'][building_types]}\n{data['materials'][building_materials]}"
+
+        return self._clip_condition(clip, text)
 
 
-class SellectNegPrompt:
+class SelectNegPrompt(ArchFunc):
+    NEGATIVE_PROMPT_FILE = Path(__file__).resolve().parent / "negative_prompt.toml"
+
     def __init__(self):
         pass
 
     @classmethod
     def INPUT_TYPES(cls):
-        """
-        Return a dictionary which contains config for all input fields.
-        Some types (string): "MODEL", "VAE", "CLIP", "CONDITIONING", "LATENT", "IMAGE", "INT", "STRING", "FLOAT".
-        Input types "INT", "STRING" or "FLOAT" are special values for fields on the node.
-        The type can be a list for selection.
-
-        Returns: `dict`:
-            - Key input_fields_group (`string`): Can be either required, hidden or optional. A node class must have property `required`
-            - Value input_fields (`dict`): Contains input fields config:
-                * Key field_name (`string`): Name of a entry-point method's argument
-                * Value field_config (`tuple`):
-                    + First value is a string indicate the type of field or a list for selection.
-                    + Secound value is a config for type "INT", "STRING" or "FLOAT".
-        """
         file_name = Path(__file__).resolve().parent / "negative_prompt.toml"
         with file_name.open("r", encoding="utf-8") as file:
             data = toml.load(file)
@@ -126,35 +131,29 @@ class SellectNegPrompt:
     FUNCTION = "combine_prompt"
 
     # OUTPUT_NODE = False
-    # OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
 
-    CATEGORY = "Archi24/TestNodes"
+    CATEGORY = "Archi24/Clip"
 
     def combine_prompt(self, clip, negative_prompt, general1, general2):
-        file_name = Path(__file__).resolve().parent / "negative_prompt.toml"
-        with file_name.open("r", encoding="utf-8") as file:
-            data = toml.load(file)
+        data = self._load_toml(self.NEGATIVE_PROMPT_FILE)
         # 验证用户输入的值是否存在于 data 中
-        if general1 not in data["general1"]:
-            raise ValueError(f"Invalid value for general1: '{general1}'. Available options: {list(data['general1'].keys())}")
-        if general2 not in data["general2"]:
-            raise ValueError(f"Invalid value for general2: '{general2}'. Available options: {list(data['general2'].keys())}")
+        self._validate_input(general1, data, "general1")
+        self._validate_input(general2, data, "general2")
 
-        result = f"{negative_prompt}\n{data['general1'][general1]}\n{data['general2'][general2]}"
-        tokens = clip.tokenize(result)
-        cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-        return ([[cond, {"pooled_output": pooled}]],)
+        text = f"{negative_prompt}\n{data['general1'][general1]}\n{data['general2'][general2]}"
+
+        return self._clip_condition(clip, text)
 
 
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
-    "SellectPosPrompt": SellectPosPrompt,
-    "SellectNegPrompt": SellectNegPrompt,
+    "SelectPosPrompt": SelectPosPrompt,
+    "SelectNegPrompt": SelectNegPrompt,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SellectPosPrompt": "Sellect Positive Prompt",
-    "SellectNegPrompt": "Sellect Negative Prompt",
+    "SelectPosPrompt": "Select Positive Prompt",
+    "SelectNegPrompt": "Select Negative Prompt",
 }
