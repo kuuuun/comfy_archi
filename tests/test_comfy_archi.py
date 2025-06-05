@@ -4,7 +4,7 @@
 
 import pytest
 from unittest.mock import MagicMock
-from src.comfy_archi.nodes import SelectPosPrompt, SelectNegPrompt
+from src.comfy_archi.nodes import SelectPosPrompt, SelectNegPrompt, ArchFunc
 
 
 @pytest.fixture
@@ -25,6 +25,21 @@ def mock_clip():
 @pytest.fixture
 def your_class_instance():
     return SelectPosPrompt()
+
+
+class TestValidateInput:
+    @staticmethod
+    def test_validate_input_success():
+        # 测试正常输入
+        value = "option1"
+        data = {"key": {"option1": "value1", "option2": "value2"}}
+        key = "key"
+
+        # 调用方法，验证不抛出异常
+        try:
+            ArchFunc._validate_input(value, data, key)
+        except ValueError:
+            pytest.fail("ValueError was raised unexpectedly")
 
 
 def test_example_node_initialization(sample_class):
