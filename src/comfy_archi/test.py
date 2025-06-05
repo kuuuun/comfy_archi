@@ -1,8 +1,9 @@
+# custom test, not formal test file
 import toml
 import pprint
 from pathlib import Path
 
-file_name = Path(__file__).resolve().parent / "prompt.toml"
+file_name = Path(__file__).resolve().cwd() / "src/comfy_archi/positive_prompt.toml"
 with file_name.open("r", encoding="utf-8") as file:
     data = toml.load(file)
 # num = len(data)

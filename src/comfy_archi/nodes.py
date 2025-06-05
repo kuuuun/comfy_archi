@@ -53,14 +53,8 @@ class SellectPosPrompt:
     FUNCTION = "combine_prompt"
 
     # OUTPUT_NODE = False
-    # OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
 
     CATEGORY = "Archi24/TestNodes"
-
-    # def arTextEncode(self, clip, text):
-    #     tokens = clip.tokenize(text)
-    #     cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-    #     return ([[cond, {"pooled_output": pooled}]],)
 
     def combine_prompt(self, clip, positive_prompt, building_general, building_styles, building_types, building_materials):
         file_name = Path(__file__).resolve().parent / "positive_prompt.toml"
