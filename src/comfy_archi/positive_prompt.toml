@@ -1,0 +1,21 @@
+[general]
+modern_tech = "architectural photograph, visual perspective, high-tech style, high quality, detailed, "
+culture_solid = "architectural photograph, visual perspective, "
+none = ""
+
+# 建筑形式
+[types]
+factory = "factory, "
+office = "office building, pedestrian, trees along the road, "
+school = "school, "
+opera = "opera, "
+
+# 透视风格
+[styles]
+daylight = "daylight, "
+night = "night, soft diffuse light, "
+
+# 材料倾向
+[materials]
+aluminium_glass = "aluminium panel, clear glass, glass curtain wall, anodized aluminum, "
+coating = "coating, solid wall with painting, "
