@@ -1,5 +1,7 @@
-import toml
 from pathlib import Path
+from typing import Any
+
+import toml
 
 
 class ArchFunc:
@@ -11,7 +13,7 @@ class ArchFunc:
         pass
 
     @staticmethod
-    def _load_toml(file_name):
+    def _load_toml(file_name) -> dict:
         """
         读取 toml 文件
         """
@@ -24,7 +26,7 @@ class ArchFunc:
             raise ValueError(f"Invalid TOML format in file: {file_name}")
 
     @staticmethod
-    def _validate_input(value, data, key) -> None:
+    def _validate_input(value: str, data: dict, key: str) -> None:
         """
         检验输入
         """
@@ -32,7 +34,7 @@ class ArchFunc:
             raise ValueError(f"Invalid value for {key}: '{value}'. Available options: {list(data[key].keys())}")
 
     @staticmethod
-    def _clip_condition(clip, text):
+    def _clip_condition(clip: Any, text: str) -> tuple[list[list[Any]]]:
         """
         Clip 转 conditioning
         """
@@ -42,16 +44,15 @@ class ArchFunc:
 
 
 class SelectPosPrompt(ArchFunc):
-    POSITIVE_PROMPT_FILE = Path(__file__).resolve().parent / "positive_prompt.toml"
+    POSITIVE_PROMPT_FILE: Path = Path(__file__).resolve().parent / "positive_prompt.toml"
 
     def __init__(self):
         pass
 
     @classmethod
     def INPUT_TYPES(cls):
-        file_name = Path(__file__).resolve().parent / "positive_prompt.toml"
-        with file_name.open("r", encoding="utf-8") as file:
-            data = toml.load(file)
+        data = cls._load_toml(cls.POSITIVE_PROMPT_FILE)
+
         # num = len(data)
         elements_general = list(data["general"])
         elements_styles = list(data["styles"])
@@ -83,7 +84,9 @@ class SelectPosPrompt(ArchFunc):
 
     CATEGORY = "Archi24/Clip"
 
-    def combine_prompt(self, clip, positive_prompt, building_general, building_styles, building_types, building_materials):
+    def combine_prompt(
+        self, clip: Any, positive_prompt: str, building_general: str, building_styles: str, building_types: str, building_materials: str
+    ) -> tuple[list[list[Any]]]:
         data = self._load_toml(self.POSITIVE_PROMPT_FILE)
 
         self._validate_input(building_general, data, "general")
@@ -97,19 +100,17 @@ class SelectPosPrompt(ArchFunc):
 
 
 class SelectNegPrompt(ArchFunc):
-    NEGATIVE_PROMPT_FILE = Path(__file__).resolve().parent / "negative_prompt.toml"
+    NEGATIVE_PROMPT_FILE: Path = Path(__file__).resolve().parent / "negative_prompt.toml"
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @classmethod
-    def INPUT_TYPES(cls):
-        file_name = Path(__file__).resolve().parent / "negative_prompt.toml"
-        with file_name.open("r", encoding="utf-8") as file:
-            data = toml.load(file)
-        # num = len(data)
-        elements_general1 = list(data["general1"])
-        elements_general2 = list(data["general2"])
+    def INPUT_TYPES(cls) -> dict[str, dict[str, Any]]:
+        data = cls._load_toml(cls.NEGATIVE_PROMPT_FILE)
+
+        elements_general1: list = list(data["general1"])  # list of sub-items name
+        elements_general2: list = list(data["general2"])
 
         return {
             "required": {
@@ -126,15 +127,15 @@ class SelectNegPrompt(ArchFunc):
             },
         }
 
-    RETURN_TYPES = ("CONDITIONING",)
-    OUTPUT_TOOLTIPS = ("A conditioning containing the embedded text used to guide the diffusion model.",)
-    FUNCTION = "combine_prompt"
+    RETURN_TYPES: tuple[str] = ("CONDITIONING",)
+    OUTPUT_TOOLTIPS: tuple[str] = ("A conditioning containing the embedded text used to guide the diffusion model.",)
+    FUNCTION: str = "combine_prompt"
 
     # OUTPUT_NODE = False
 
-    CATEGORY = "Archi24/Clip"
+    CATEGORY: str = "Archi24/Clip"
 
-    def combine_prompt(self, clip, negative_prompt, general1, general2):
+    def combine_prompt(self, clip, negative_prompt: str, general1: str, general2: str):
         data = self._load_toml(self.NEGATIVE_PROMPT_FILE)
         # 验证用户输入的值是否存在于 data 中
         self._validate_input(general1, data, "general1")

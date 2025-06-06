@@ -10,7 +10,9 @@ authors = [{ name = "Kun", email = "kun_g@msn.com" }]
 readme = "README.md"
 license = { text = "MIT license" }
 classifiers = []
-dependencies = []
+dependencies = [
+    "pytest>=8.4.0",
+]
 
 [project.optional-dependencies]
 dev = [

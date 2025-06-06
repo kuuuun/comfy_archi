@@ -42,6 +42,59 @@ class TestValidateInput:
             pytest.fail("ValueError was raised unexpectedly")
 
 
+class TestCombinePrompt:
+    def setup_method(self):
+        self.obj = SelectPosPrompt()
+
+        self.obj._load_toml = MagicMock()
+        self.obj._validate_input = MagicMock()
+        self.obj._clip_condition = MagicMock()
+
+        self.data = {
+            "general": {"general1": "value1"},
+            "styles": {"style1": "value2"},
+            "types": {"type1": "value3"},
+            "materials": {"material1": "value4"},
+        }
+
+        self.obj._load_toml.return_value = self.data
+        self.obj._clip_condition.return_value = "Processed clip"
+
+    def test_combine_prompt(self):
+        clip = "clip_data"
+        positive_prompt = "Initial prompt"
+        building_general = "general1"
+        building_styles = "style1"
+        building_types = "type1"
+        building_materials = "material1"
+
+        # 定义预期的文本内容
+        self.expected_text = (
+            f"{positive_prompt}\n"
+            f"{self.data['general'][building_general]}\n"
+            f"{self.data['styles'][building_styles]}\n"
+            f"{self.data['types'][building_types]}\n"
+            f"{self.data['materials'][building_materials]}"
+        )
+
+        result = self.obj.combine_prompt(clip, positive_prompt, building_general, building_styles, building_types, building_materials)
+
+        # 检查 _load_toml 是否被调用
+        self.obj._load_toml.assert_called_once_with(self.obj.POSITIVE_PROMPT_FILE)
+
+        # 检查 _validate_input 是否被正确调用
+        self.obj._validate_input.assert_any_call(building_general, self.data, "general")
+        self.obj._validate_input.assert_any_call(building_styles, self.data, "styles")
+        self.obj._validate_input.assert_any_call(building_types, self.data, "types")
+        self.obj._validate_input.assert_any_call(building_materials, self.data, "materials")
+
+        # 检查 _clip_condition 是否被调用
+        self.obj._clip_condition.assert_called_once_with(clip, self.expected_text)
+
+        # 检查返回值
+        assert result == "Processed clip"
+
+
 def test_example_node_initialization(sample_class):
     """Test that the node can be instantiated."""
     assert isinstance(sample_class, SelectPosPrompt)
